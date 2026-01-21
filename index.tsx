@@ -2,34 +2,19 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer, 
-  LabelList
-} from 'recharts';
-import { 
   School, 
   Users, 
   MapPin, 
-  CheckCircle2, 
-  DollarSign,
-  Navigation,
-  Sun,
-  Moon,
-  Settings,
-  X,
-  AlignLeft,
-  AlignCenter,
-  AlignJustify,
-  TrendingUp,
-  Upload,
-  HardHat,
-  Globe,
-  RefreshCw
+  DollarSign, 
+  Navigation, 
+  Sun, 
+  Moon, 
+  Settings, 
+  X, 
+  TrendingUp, 
+  HardHat, 
+  Globe, 
+  RefreshCw 
 } from 'lucide-react';
 
 const INITIAL_SCHOOL_DATA = [
@@ -51,76 +36,46 @@ const DEFAULT_CONFIG = {
   headerText: "Relatório Consolidado: Reforma Geral das Escolas",
   footerTextPrimary: "Rio Preto Educação",
   footerTextSecondary: "Governo Municipal de São José do Rio Preto",
-  footerTextTertiary: "Relatório Gerencial de Infraestrutura Escolar • Ciclo 2024",
   siteUrl: "https://jboliveira-maker.github.io/Reforma/",
-  alignment: "left",
   isDarkMode: false
 };
 
 const App = () => {
-  // Inicialização inteligente: Verifica localStorage antes de usar o padrão
   const [config, setConfig] = useState(() => {
-    try {
-      const saved = localStorage.getItem("reformaEscolasConfig_v2");
-      if (saved) {
-        return { ...DEFAULT_CONFIG, ...JSON.parse(saved) };
-      }
-    } catch (e) {
-      console.error("Erro ao carregar configurações", e);
-    }
-    return DEFAULT_CONFIG;
+    const saved = localStorage.getItem("reformaEscolas_v5");
+    return saved ? JSON.parse(saved) : DEFAULT_CONFIG;
   });
 
   const [showSettings, setShowSettings] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Sincroniza com localStorage sempre que o config mudar
   useEffect(() => {
-    localStorage.setItem("reformaEscolasConfig_v2", JSON.stringify(config));
+    localStorage.setItem("reformaEscolas_v5", JSON.stringify(config));
   }, [config]);
 
-  const updateConfig = (key: keyof typeof DEFAULT_CONFIG, value: any) => {
-    setConfig(prev => ({ ...prev, [key]: value }));
+  const updateConfig = (key: string, value: any) => {
+    setConfig((prev: any) => ({ ...prev, [key]: value }));
   };
 
-  const resetConfig = () => {
-    if (confirm("Deseja restaurar as configurações padrão?")) {
-      setConfig(DEFAULT_CONFIG);
-      localStorage.removeItem("reformaEscolasConfig_v2");
-    }
-  };
-
-  const sortedSchools = useMemo(() => {
-    return [...INITIAL_SCHOOL_DATA].sort((a, b) => a.nome.localeCompare(b.nome));
-  }, []);
+  const schools = useMemo(() => 
+    [...INITIAL_SCHOOL_DATA].sort((a, b) => a.nome.localeCompare(b.nome)), 
+  []);
 
   const totalInvestimento = useMemo(() => 
-    sortedSchools.reduce((acc, school) => acc + school.valorInvestimento, 0),
-  [sortedSchools]);
+    schools.reduce((acc, s) => acc + s.valorInvestimento, 0), 
+  [schools]);
 
   const totalAlunos = useMemo(() => 
-    sortedSchools.reduce((acc, school) => acc + school.alunos, 0), 
-  [sortedSchools]);
+    schools.reduce((acc, s) => acc + s.alunos, 0), 
+  [schools]);
 
   const formatCurrency = (val: number) => 
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        updateConfig("headerImg", reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${config.isDarkMode ? 'bg-slate-950 text-slate-100' : 'bg-[#fcfdff] text-slate-900'}`}>
-      <div className="max-w-7xl mx-auto px-4 py-8 md:py-12 relative">
+    <div className={`min-h-screen transition-colors duration-300 ${config.isDarkMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
+      <div className="max-w-7xl mx-auto px-4 py-12">
         
-        {/* CONTROLES FLUTUANTES */}
+        {/* BOTÕES DE CONTROLE */}
         <div className="fixed top-6 right-6 flex gap-3 no-print z-50">
           <button 
             onClick={() => updateConfig("isDarkMode", !config.isDarkMode)}
@@ -130,133 +85,77 @@ const App = () => {
           </button>
           <button 
             onClick={() => setShowSettings(true)}
-            className={`p-3 rounded-full shadow-2xl transition-all hover:scale-110 active:scale-95 ${config.isDarkMode ? 'bg-slate-800 text-slate-100' : 'bg-white text-slate-900 border border-slate-200'}`}
+            className={`p-3 rounded-full shadow-2xl transition-all hover:scale-110 ${config.isDarkMode ? 'bg-slate-800' : 'bg-white border border-slate-200'}`}
           >
             <Settings size={20} />
           </button>
         </div>
 
-        {/* PAINEL DE CONFIGURAÇÕES */}
-        {showSettings && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-md">
-            <div className={`w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden border ${config.isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-              <div className="p-8 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/20">
-                <h3 className="text-xl font-black uppercase tracking-widest flex items-center gap-3">
-                  <Settings className="text-blue-600" /> Ajustes do Sistema
-                </h3>
-                <button onClick={() => setShowSettings(false)} className="hover:rotate-90 transition-transform"><X size={24} /></button>
-              </div>
-              
-              <div className="p-8 space-y-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
-                <div className="space-y-4">
-                  <label className="text-xs font-black uppercase text-slate-400 block">Logotipo do Cabeçalho</label>
-                  <div className="flex gap-2">
-                    <button onClick={() => fileInputRef.current?.click()} className="flex-1 py-3 bg-blue-50 dark:bg-slate-800 text-blue-600 rounded-2xl border-2 border-dashed border-blue-200 dark:border-slate-700 hover:border-blue-500 transition-all flex items-center justify-center gap-2 font-bold"><Upload size={18}/> Enviar Logo</button>
-                    <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept="image/*" className="hidden" />
-                  </div>
-                  <input type="text" value={config.headerImg} onChange={(e) => updateConfig("headerImg", e.target.value)} placeholder="URL da imagem externa..." className="w-full px-5 py-3 rounded-2xl border dark:bg-slate-800 dark:border-slate-700 outline-none focus:ring-2 focus:ring-blue-500 transition-all" />
-                </div>
-                
-                <div className="space-y-4">
-                  <label className="text-xs font-black uppercase text-slate-400 block">Título do Relatório</label>
-                  <input type="text" value={config.headerText} onChange={(e) => updateConfig("headerText", e.target.value)} className="w-full px-5 py-3 rounded-2xl border dark:bg-slate-800 dark:border-slate-700 outline-none" />
-                </div>
-
-                <div className="space-y-4">
-                  <label className="text-xs font-black uppercase text-slate-400 block">URL Oficial (GitHub Pages)</label>
-                  <input type="text" value={config.siteUrl} onChange={(e) => updateConfig("siteUrl", e.target.value)} className="w-full px-5 py-3 rounded-2xl border dark:bg-slate-800 dark:border-slate-700 outline-none text-blue-600 font-bold" />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-xs font-black uppercase text-slate-400 block">Rodapé Principal</label>
-                    <input type="text" value={config.footerTextPrimary} onChange={(e) => updateConfig("footerTextPrimary", e.target.value)} className="w-full px-4 py-3 rounded-xl border dark:bg-slate-800" />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-black uppercase text-slate-400 block">Instituição</label>
-                    <input type="text" value={config.footerTextSecondary} onChange={(e) => updateConfig("footerTextSecondary", e.target.value)} className="w-full px-4 py-3 rounded-xl border dark:bg-slate-800" />
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-8 bg-slate-50 dark:bg-slate-800/50 flex justify-between items-center">
-                <button onClick={resetConfig} className="flex items-center gap-2 text-red-500 font-black text-[10px] uppercase hover:underline"><RefreshCw size={14}/> Limpar Tudo</button>
-                <button onClick={() => setShowSettings(false)} className="px-10 bg-blue-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest shadow-xl hover:bg-blue-700 active:scale-95 transition-all">Aplicar e Salvar</button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* CABEÇALHO PRINCIPAL */}
-        <header className={`mb-16 border-b-4 pb-12 flex flex-col items-center transition-colors ${config.isDarkMode ? 'border-slate-800' : 'border-slate-100'}`}>
-          <div className="mb-12 w-full min-h-[180px] flex items-center justify-center overflow-hidden">
+        {/* CABEÇALHO */}
+        <header className="mb-20 text-center space-y-8">
+          <div className="flex justify-center">
             <img 
               src={config.headerImg} 
-              alt="Logotipo" 
-              className="w-auto max-w-[400px] max-h-[220px] object-contain filter drop-shadow-2xl transition-all duration-500 hover:scale-105" 
-              onError={(e) => (e.currentTarget.src = DEFAULT_CONFIG.headerImg)} 
+              alt="Logo Prefeitura" 
+              className="h-32 object-contain drop-shadow-xl" 
+              onError={(e) => { (e.target as HTMLImageElement).src = DEFAULT_CONFIG.headerImg; }}
             />
           </div>
-          <div className={`w-full py-10 px-12 text-center rounded-[3rem] shadow-2xl relative overflow-hidden ${config.isDarkMode ? 'bg-slate-900 text-blue-100 border border-slate-800' : 'bg-slate-900 text-white'}`}>
-             <div className="absolute top-0 left-0 w-full h-full opacity-5 pointer-events-none bg-[radial-gradient(circle,white_1px,transparent_1px)] bg-[size:24px_24px]"></div>
-             <h2 className="text-2xl md:text-3xl font-black uppercase tracking-[0.4em] leading-tight relative z-10">{config.headerText}</h2>
+          <div className="bg-slate-900 text-white py-12 px-8 rounded-[3rem] shadow-2xl relative overflow-hidden">
+            <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle,white_1px,transparent_1px)] bg-[size:20px_20px]"></div>
+            <h1 className="text-2xl md:text-4xl font-black uppercase tracking-[0.2em] relative z-10">{config.headerText}</h1>
           </div>
         </header>
 
-        {/* RESUMO EXECUTIVO */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-32">
-          {[
-            { label: 'Total em Obras', value: formatCurrency(totalInvestimento), icon: <DollarSign size={28} />, grad: 'from-blue-600 to-indigo-700' },
-            { label: 'Alunos Impactados', value: totalAlunos.toLocaleString(), icon: <Users size={28} />, grad: 'from-emerald-500 to-teal-600' },
-            { label: 'Unidades Atendidas', value: sortedSchools.length.toString(), icon: <School size={28} />, grad: 'from-amber-400 to-orange-500' }
-          ].map((kpi, idx) => (
-            <div key={idx} className={`p-10 rounded-[3.5rem] border flex flex-col items-center text-center shadow-xl transition-all hover:-translate-y-2 ${config.isDarkMode ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-100'}`}>
-              <div className={`p-6 rounded-[2.5rem] shadow-lg bg-gradient-to-br ${kpi.grad} text-white mb-8`}>{kpi.icon}</div>
-              <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2">{kpi.label}</span>
-              <h3 className="text-3xl font-black tracking-tighter">{kpi.value}</h3>
-            </div>
-          ))}
+        {/* DASHBOARD KPIs */}
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-24">
+          <div className={`p-10 rounded-[3rem] border transition-all hover:-translate-y-2 shadow-xl ${config.isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+            <div className="bg-blue-600 text-white p-5 rounded-3xl inline-block mb-6 shadow-lg"><DollarSign size={32}/></div>
+            <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Total em Investimentos</p>
+            <h2 className="text-3xl font-black tracking-tighter">{formatCurrency(totalInvestimento)}</h2>
+          </div>
+          <div className={`p-10 rounded-[3rem] border transition-all hover:-translate-y-2 shadow-xl ${config.isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+            <div className="bg-emerald-500 text-white p-5 rounded-3xl inline-block mb-6 shadow-lg"><Users size={32}/></div>
+            <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Alunos Beneficiados</p>
+            <h2 className="text-3xl font-black tracking-tighter">{totalAlunos.toLocaleString()}</h2>
+          </div>
+          <div className={`p-10 rounded-[3rem] border transition-all hover:-translate-y-2 shadow-xl ${config.isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+            <div className="bg-amber-500 text-white p-5 rounded-3xl inline-block mb-6 shadow-lg"><School size={32}/></div>
+            <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Unidades em Reforma</p>
+            <h2 className="text-3xl font-black tracking-tighter">{schools.length}</h2>
+          </div>
         </section>
 
-        {/* LISTAGEM TÉCNICA */}
+        {/* TABELA DE INVESTIMENTOS */}
         <section className="mb-32">
-          <div className="flex items-center gap-6 mb-12">
-            <div className="p-6 bg-slate-900 text-white rounded-[2rem] shadow-2xl"><TrendingUp size={36}/></div>
-            <h2 className="text-4xl font-black uppercase tracking-tighter">Quadro Detalhado de Investimentos</h2>
+          <div className="flex items-center gap-4 mb-10">
+            <TrendingUp className="text-blue-600" size={32}/>
+            <h2 className="text-3xl font-black uppercase tracking-tighter">Detalhamento de Investimentos</h2>
           </div>
-          <div className={`rounded-[3.5rem] shadow-2xl border overflow-hidden ${config.isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+          <div className={`rounded-[3rem] overflow-hidden border shadow-2xl ${config.isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead className="bg-slate-900 text-white">
                   <tr>
                     <th className="px-10 py-8 text-[11px] font-black uppercase tracking-widest">Unidade Escolar</th>
-                    <th className="px-10 py-8 text-[11px] font-black uppercase tracking-widest">Localização</th>
                     <th className="px-10 py-8 text-[11px] font-black uppercase tracking-widest text-center">Alunos</th>
-                    <th className="px-10 py-8 text-[11px] font-black uppercase tracking-widest">Investimento</th>
+                    <th className="px-10 py-8 text-[11px] font-black uppercase tracking-widest">Valor Investido</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {sortedSchools.map(s => (
-                    <tr key={s.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
+                  {schools.map(s => (
+                    <tr key={s.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                       <td className="px-10 py-8">
-                        <div className="font-black text-[16px] text-slate-800 dark:text-blue-400">{s.nome}</div>
-                        <div className="text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-widest">{s.segmento}</div>
+                        <div className="font-black text-blue-600 dark:text-blue-400 text-lg">{s.nome}</div>
+                        <div className="text-[10px] font-bold uppercase text-slate-400 mt-1 tracking-widest">{s.bairro} — {s.macroregiao}</div>
                       </td>
-                      <td className="px-10 py-8">
-                        <div className="text-xs font-black uppercase text-slate-600 dark:text-slate-300">{s.bairro}</div>
-                        <div className="text-[11px] text-blue-600 font-bold uppercase">{s.macroregiao}</div>
-                      </td>
-                      <td className="px-10 py-8 text-center">
-                        <span className="px-4 py-2 rounded-xl border-2 font-black text-xs">{s.alunos}</span>
-                      </td>
-                      <td className="px-10 py-8">
-                        <div className="font-black text-[18px] text-emerald-600 tracking-tighter">{formatCurrency(s.valorInvestimento)}</div>
-                      </td>
+                      <td className="px-10 py-8 text-center font-black text-slate-500">{s.alunos}</td>
+                      <td className="px-10 py-8 font-black text-emerald-600 text-lg">{formatCurrency(s.valorInvestimento)}</td>
                     </tr>
                   ))}
-                  <tr className="bg-slate-900 text-white">
-                    <td colSpan={3} className="px-10 py-10 text-right font-black uppercase tracking-widest text-slate-400">Investimento Total Estimado</td>
-                    <td className="px-10 py-10 text-3xl font-black text-emerald-400 tracking-tighter">{formatCurrency(totalInvestimento)}</td>
+                  <tr className="bg-slate-100 dark:bg-slate-800">
+                    <td colSpan={2} className="px-10 py-10 text-right font-black uppercase tracking-widest text-slate-400">Total Geral do Ciclo</td>
+                    <td className="px-10 py-10 text-3xl font-black text-blue-600 dark:text-blue-400">{formatCurrency(totalInvestimento)}</td>
                   </tr>
                 </tbody>
               </table>
@@ -264,70 +163,103 @@ const App = () => {
           </div>
         </section>
 
-        {/* GEOLOCALIZAÇÃO */}
+        {/* MAPA */}
         <section className="mb-32">
-          <div className="flex items-center gap-6 mb-12">
-            <div className="p-6 bg-red-600 text-white rounded-[2rem] shadow-2xl"><Navigation size={36}/></div>
-            <h2 className="text-4xl font-black uppercase tracking-tighter">Mapeamento de Obras</h2>
+          <div className="flex items-center gap-4 mb-10">
+            <Navigation className="text-red-600" size={32}/>
+            <h2 className="text-3xl font-black uppercase tracking-tighter">Geolocalização das Obras</h2>
           </div>
-          <div className="rounded-[4rem] overflow-hidden shadow-2xl border-[20px] h-[650px] border-white dark:border-slate-900 transition-all hover:border-slate-100">
-            <iframe src="https://www.google.com/maps/d/u/0/embed?mid=1cSOLT1IFTlPUrZYO_xxqzJV_EQF1S_I" width="100%" height="100%" className="border-0 brightness-[1.05]"></iframe>
+          <div className="rounded-[4rem] overflow-hidden shadow-2xl border-[16px] h-[600px] border-white dark:border-slate-900 transition-all hover:border-slate-100">
+            <iframe 
+              src="https://www.google.com/maps/d/u/0/embed?mid=1cSOLT1IFTlPUrZYO_xxqzJV_EQF1S_I" 
+              width="100%" 
+              height="100%" 
+              className="border-0 grayscale-[0.2] hover:grayscale-0 transition-all duration-700"
+            ></iframe>
           </div>
         </section>
 
-        {/* CARDS DE SERVIÇOS */}
+        {/* CARDS DE ESCOPO */}
         <section className="mb-40">
-          <div className="flex items-center gap-6 mb-16">
-            <div className="p-6 bg-amber-500 text-white rounded-[2rem] shadow-2xl"><HardHat size={36}/></div>
-            <h2 className="text-4xl font-black uppercase tracking-tighter">Escopo Técnico dos Serviços</h2>
+          <div className="flex items-center gap-4 mb-16">
+            <HardHat className="text-amber-500" size={32}/>
+            <h2 className="text-3xl font-black uppercase tracking-tighter">Escopo Técnico dos Serviços</h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
-            {sortedSchools.map(s => (
-              <div key={s.id} className={`p-12 rounded-[4rem] border-b-[12px] shadow-2xl transition-all hover:-translate-y-3 hover:border-blue-600 group ${config.isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-                <h5 className="font-black text-xl uppercase mb-8 leading-tight min-h-[3.5rem] group-hover:text-blue-600 transition-colors">{s.nome}</h5>
-                <div className={`p-8 rounded-[2.5rem] italic text-sm leading-relaxed mb-8 border transition-all ${config.isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-[#f9fafc] border-slate-50'} group-hover:bg-white dark:group-hover:bg-slate-800`}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+            {schools.map(s => (
+              <div key={s.id} className={`p-10 rounded-[3.5rem] border-b-[10px] shadow-2xl transition-all hover:-translate-y-3 hover:border-blue-600 ${config.isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+                <h3 className="font-black text-xl uppercase mb-6 leading-tight min-h-[3rem]">{s.nome}</h3>
+                <div className={`p-6 rounded-3xl italic text-sm leading-relaxed mb-8 border ${config.isDarkMode ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-slate-50 border-slate-50'}`}>
                   "{s.servicos}"
                 </div>
-                <div className="flex justify-between items-end pt-8 border-t dark:border-slate-800">
-                  <div>
-                    <span className="text-[10px] font-black text-slate-400 uppercase flex items-center gap-1.5 mb-2"><MapPin size={12}/> {s.bairro}</span>
-                    <div className="text-xs font-black uppercase tracking-tight">{s.macroregiao}</div>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-[10px] font-black text-slate-400 uppercase mb-1 block">Orçamento</span>
-                    <div className="text-blue-600 font-black text-2xl tracking-tighter">{formatCurrency(s.valorInvestimento)}</div>
-                  </div>
+                <div className="pt-6 border-t dark:border-slate-800 flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-400">
+                  <span className="flex items-center gap-1"><MapPin size={12}/> {s.bairro}</span>
+                  <span className="text-blue-600 dark:text-blue-400">{formatCurrency(s.valorInvestimento)}</span>
                 </div>
               </div>
             ))}
           </div>
         </section>
 
-        {/* RODAPÉ E LINK OFICIAL */}
-        <footer className="mt-40 pb-32 text-center border-t dark:border-slate-800 pt-24">
-          <div className="max-w-3xl mx-auto space-y-8">
-            <div className="space-y-4">
-              <p className="text-[11px] font-black uppercase tracking-[0.8em] text-slate-400 mb-6">{config.footerTextPrimary}</p>
-              <h4 className="text-2xl font-black uppercase tracking-widest leading-tight">{config.footerTextSecondary}</h4>
-              <p className="text-slate-500 text-sm font-bold uppercase tracking-[0.2em]">{config.footerTextTertiary}</p>
-            </div>
-            
-            <div className="pt-16 flex flex-col items-center gap-4">
-              <div className="w-16 h-1.5 bg-blue-600 rounded-full mb-2"></div>
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.5em]">Plataforma de Consulta Online:</span>
-              <a 
-                href={config.siteUrl} 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black text-sm transition-all hover:scale-105 active:scale-95 shadow-xl ${
-                  config.isDarkMode ? 'bg-slate-800 text-blue-400 hover:bg-slate-700' : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
-                }`}
-              >
-                <Globe size={18}/> {config.siteUrl}
+        {/* RODAPÉ */}
+        <footer className="mt-40 pb-32 text-center border-t dark:border-slate-800 pt-20">
+          <div className="max-w-2xl mx-auto space-y-6">
+            <p className="text-[10px] font-black uppercase tracking-[0.5em] text-slate-400">{config.footerTextPrimary}</p>
+            <h4 className="text-2xl font-black uppercase tracking-widest">{config.footerTextSecondary}</h4>
+            <div className="pt-10 flex flex-col items-center gap-4">
+              <div className="w-12 h-1 bg-blue-600 rounded-full"></div>
+              <a href={config.siteUrl} target="_blank" className="flex items-center gap-3 px-10 py-5 bg-blue-600 text-white rounded-3xl font-black text-sm shadow-xl hover:scale-105 active:scale-95 transition-all">
+                <Globe size={18}/> Acessar Portal de Transparência
               </a>
             </div>
           </div>
         </footer>
+
+        {/* SETTINGS MODAL */}
+        {showSettings && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-950/60 backdrop-blur-md">
+            <div className={`w-full max-w-xl rounded-[3rem] p-12 shadow-2xl border ${config.isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white'}`}>
+              <div className="flex justify-between items-center mb-10 pb-6 border-b dark:border-slate-800">
+                <h3 className="text-xl font-black uppercase tracking-widest">Personalizar Apresentação</h3>
+                <button onClick={() => setShowSettings(false)} className="hover:rotate-90 transition-transform"><X/></button>
+              </div>
+              <div className="space-y-8">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block">Título Principal</label>
+                  <input 
+                    type="text" 
+                    value={config.headerText} 
+                    onChange={e => updateConfig("headerText", e.target.value)} 
+                    className="w-full p-5 rounded-2xl border dark:bg-slate-800 dark:border-slate-700 outline-none focus:ring-2 focus:ring-blue-500 transition-all" 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block">URL da Logo</label>
+                  <input 
+                    type="text" 
+                    value={config.headerImg} 
+                    onChange={e => updateConfig("headerImg", e.target.value)} 
+                    className="w-full p-5 rounded-2xl border dark:bg-slate-800 dark:border-slate-700 outline-none" 
+                  />
+                </div>
+                <div className="flex gap-4 pt-4">
+                  <button 
+                    onClick={() => { localStorage.removeItem("reformaEscolas_v5"); window.location.reload(); }} 
+                    className="flex-1 py-5 border-2 rounded-3xl font-black uppercase text-[10px] tracking-widest hover:bg-slate-50 dark:hover:bg-slate-800"
+                  >
+                    <RefreshCw size={14} className="inline mr-2"/> Resetar
+                  </button>
+                  <button 
+                    onClick={() => setShowSettings(false)} 
+                    className="flex-[2] py-5 bg-blue-600 text-white rounded-3xl font-black uppercase tracking-widest shadow-xl hover:bg-blue-700 transition-all"
+                  >
+                    Salvar Alterações
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
