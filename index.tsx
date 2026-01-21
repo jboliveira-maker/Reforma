@@ -25,11 +25,8 @@ import {
   AlignLeft,
   AlignCenter,
   AlignJustify,
-  Type,
-  ImageIcon,
   TrendingUp,
   Upload,
-  FileText,
   HardHat,
   Globe,
   RefreshCw
@@ -49,8 +46,6 @@ const INITIAL_SCHOOL_DATA = [
   { id: 11, nome: "Jacy Salles da Silva", segmento: "4 a 5 anos", alunos: 166, bairro: "Jd Jão Paulo II", macroregiao: "Bosque", regiao: "Norte", valorInvestimento: 2027636.01, servicos: "Adequação de fluxo de cozinha, ampliação de sala dos professores com sanitário, construção de novo espaço para biblioteca, construção de depositos, costrução de rampa acessível, construção de refeitório para funcionários, construção de sanitários, construção de sanitários PNEs, instalação de condicionadores de ar, adequação de estacionamento, manutenção em piso granilite, pintura predial." }
 ];
 
-const COLORS = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316', '#6366f1', '#14b8a6', '#f43f5e'];
-
 const DEFAULT_CONFIG = {
   headerImg: "https://www.riopreto.sp.gov.br/portal/images/logo_prefeitura.png",
   headerText: "Relatório Consolidado: Reforma Geral das Escolas",
@@ -63,16 +58,25 @@ const DEFAULT_CONFIG = {
 };
 
 const App = () => {
+  // Inicialização inteligente: Verifica localStorage antes de usar o padrão
   const [config, setConfig] = useState(() => {
-    const saved = localStorage.getItem("reformaEscolasConfig");
-    return saved ? { ...DEFAULT_CONFIG, ...JSON.parse(saved) } : DEFAULT_CONFIG;
+    try {
+      const saved = localStorage.getItem("reformaEscolasConfig_v2");
+      if (saved) {
+        return { ...DEFAULT_CONFIG, ...JSON.parse(saved) };
+      }
+    } catch (e) {
+      console.error("Erro ao carregar configurações", e);
+    }
+    return DEFAULT_CONFIG;
   });
 
   const [showSettings, setShowSettings] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Sincroniza com localStorage sempre que o config mudar
   useEffect(() => {
-    localStorage.setItem("reformaEscolasConfig", JSON.stringify(config));
+    localStorage.setItem("reformaEscolasConfig_v2", JSON.stringify(config));
   }, [config]);
 
   const updateConfig = (key: keyof typeof DEFAULT_CONFIG, value: any) => {
@@ -80,8 +84,9 @@ const App = () => {
   };
 
   const resetConfig = () => {
-    if (confirm("Deseja realmente restaurar todas as configurações originais?")) {
+    if (confirm("Deseja restaurar as configurações padrão?")) {
       setConfig(DEFAULT_CONFIG);
+      localStorage.removeItem("reformaEscolasConfig_v2");
     }
   };
 
@@ -96,22 +101,6 @@ const App = () => {
   const totalAlunos = useMemo(() => 
     sortedSchools.reduce((acc, school) => acc + school.alunos, 0), 
   [sortedSchools]);
-
-  const segmentData = useMemo(() => {
-    const counts: Record<string, number> = {};
-    sortedSchools.forEach(s => {
-      counts[s.segmento] = (counts[s.segmento] || 0) + s.alunos;
-    });
-    return Object.keys(counts).map(key => ({ name: key, value: counts[key] }));
-  }, [sortedSchools]);
-
-  const macroregionData = useMemo(() => {
-    const data: Record<string, number> = {};
-    sortedSchools.forEach(s => {
-      data[s.macroregiao] = (data[s.macroregiao] || 0) + s.valorInvestimento;
-    });
-    return Object.keys(data).map(key => ({ name: key, value: data[key] }));
-  }, [sortedSchools]);
 
   const formatCurrency = (val: number) => 
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
@@ -131,150 +120,143 @@ const App = () => {
     <div className={`min-h-screen transition-colors duration-300 ${config.isDarkMode ? 'bg-slate-950 text-slate-100' : 'bg-[#fcfdff] text-slate-900'}`}>
       <div className="max-w-7xl mx-auto px-4 py-8 md:py-12 relative">
         
-        {/* CONTROLES */}
+        {/* CONTROLES FLUTUANTES */}
         <div className="fixed top-6 right-6 flex gap-3 no-print z-50">
           <button 
             onClick={() => updateConfig("isDarkMode", !config.isDarkMode)}
-            className={`p-3 rounded-full shadow-xl transition-all hover:scale-110 active:scale-95 ${config.isDarkMode ? 'bg-amber-400 text-slate-900' : 'bg-slate-900 text-white'}`}
+            className={`p-3 rounded-full shadow-2xl transition-all hover:scale-110 active:scale-95 ${config.isDarkMode ? 'bg-amber-400 text-slate-900' : 'bg-slate-900 text-white'}`}
           >
             {config.isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
           </button>
           <button 
             onClick={() => setShowSettings(true)}
-            className={`p-3 rounded-full shadow-xl transition-all hover:scale-110 active:scale-95 ${config.isDarkMode ? 'bg-slate-800 text-slate-100' : 'bg-white text-slate-900 border border-slate-200'}`}
+            className={`p-3 rounded-full shadow-2xl transition-all hover:scale-110 active:scale-95 ${config.isDarkMode ? 'bg-slate-800 text-slate-100' : 'bg-white text-slate-900 border border-slate-200'}`}
           >
             <Settings size={20} />
           </button>
         </div>
 
-        {/* MODAL CONFIG */}
+        {/* PAINEL DE CONFIGURAÇÕES */}
         {showSettings && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-sm">
-            <div className={`w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden ${config.isDarkMode ? 'bg-slate-900' : 'bg-white'}`}>
-              <div className="p-8 border-b border-slate-200 flex justify-between items-center">
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-md">
+            <div className={`w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden border ${config.isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+              <div className="p-8 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/20">
                 <h3 className="text-xl font-black uppercase tracking-widest flex items-center gap-3">
-                  <Settings className="text-blue-600" /> Configurações do Relatório
+                  <Settings className="text-blue-600" /> Ajustes do Sistema
                 </h3>
                 <button onClick={() => setShowSettings(false)} className="hover:rotate-90 transition-transform"><X size={24} /></button>
               </div>
               
               <div className="p-8 space-y-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
-                <div className="grid grid-cols-1 gap-6">
-                  <div>
-                    <label className="text-xs font-black uppercase text-slate-400 mb-2 block">Logo do Cabeçalho</label>
-                    <div className="flex gap-2 mb-2">
-                      <button onClick={() => fileInputRef.current?.click()} className="flex-1 py-3 bg-slate-100 dark:bg-slate-800 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-blue-500 transition-colors flex items-center justify-center gap-2 text-sm font-bold"><Upload size={16}/> Enviar</button>
-                      <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept="image/*" className="hidden" />
-                    </div>
-                    <input type="text" value={config.headerImg} onChange={(e) => updateConfig("headerImg", e.target.value)} placeholder="Ou URL da imagem..." className="w-full px-4 py-3 rounded-xl border dark:bg-slate-800 dark:border-slate-700 outline-none" />
+                <div className="space-y-4">
+                  <label className="text-xs font-black uppercase text-slate-400 block">Logotipo do Cabeçalho</label>
+                  <div className="flex gap-2">
+                    <button onClick={() => fileInputRef.current?.click()} className="flex-1 py-3 bg-blue-50 dark:bg-slate-800 text-blue-600 rounded-2xl border-2 border-dashed border-blue-200 dark:border-slate-700 hover:border-blue-500 transition-all flex items-center justify-center gap-2 font-bold"><Upload size={18}/> Enviar Logo</button>
+                    <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept="image/*" className="hidden" />
                   </div>
-                  
-                  <div>
-                    <label className="text-xs font-black uppercase text-slate-400 mb-2 block">Título Principal</label>
-                    <input type="text" value={config.headerText} onChange={(e) => updateConfig("headerText", e.target.value)} className="w-full px-4 py-3 rounded-xl border dark:bg-slate-800 dark:border-slate-700 outline-none" />
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-black uppercase text-slate-400 mb-2 block">URL de Acesso ao Relatório</label>
-                    <input type="text" value={config.siteUrl} onChange={(e) => updateConfig("siteUrl", e.target.value)} className="w-full px-4 py-3 rounded-xl border dark:bg-slate-800 dark:border-slate-700 outline-none text-blue-500 font-medium" />
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-xs font-black uppercase text-slate-400 mb-2 block">Rodapé 1</label>
-                      <input type="text" value={config.footerTextPrimary} onChange={(e) => updateConfig("footerTextPrimary", e.target.value)} className="w-full px-4 py-2 rounded-xl border dark:bg-slate-800 dark:border-slate-700" />
-                    </div>
-                    <div>
-                      <label className="text-xs font-black uppercase text-slate-400 mb-2 block">Rodapé 2</label>
-                      <input type="text" value={config.footerTextSecondary} onChange={(e) => updateConfig("footerTextSecondary", e.target.value)} className="w-full px-4 py-2 rounded-xl border dark:bg-slate-800 dark:border-slate-700" />
-                    </div>
-                  </div>
+                  <input type="text" value={config.headerImg} onChange={(e) => updateConfig("headerImg", e.target.value)} placeholder="URL da imagem externa..." className="w-full px-5 py-3 rounded-2xl border dark:bg-slate-800 dark:border-slate-700 outline-none focus:ring-2 focus:ring-blue-500 transition-all" />
+                </div>
+                
+                <div className="space-y-4">
+                  <label className="text-xs font-black uppercase text-slate-400 block">Título do Relatório</label>
+                  <input type="text" value={config.headerText} onChange={(e) => updateConfig("headerText", e.target.value)} className="w-full px-5 py-3 rounded-2xl border dark:bg-slate-800 dark:border-slate-700 outline-none" />
                 </div>
 
-                <div className="pt-4 border-t flex justify-between items-center">
-                  <button onClick={resetConfig} className="flex items-center gap-2 text-red-500 font-bold text-xs uppercase hover:underline"><RefreshCw size={14}/> Resetar Padrões</button>
-                  <div className="flex gap-2">
-                    {['left', 'center', 'justify'].map(a => (
-                      <button key={a} onClick={() => updateConfig("alignment", a)} className={`p-2 rounded-lg border-2 ${config.alignment === a ? 'border-blue-600 text-blue-600' : 'border-slate-200'}`}>
-                        {a === 'left' ? <AlignLeft size={18}/> : a === 'center' ? <AlignCenter size={18}/> : <AlignJustify size={18}/>}
-                      </button>
-                    ))}
+                <div className="space-y-4">
+                  <label className="text-xs font-black uppercase text-slate-400 block">URL Oficial (GitHub Pages)</label>
+                  <input type="text" value={config.siteUrl} onChange={(e) => updateConfig("siteUrl", e.target.value)} className="w-full px-5 py-3 rounded-2xl border dark:bg-slate-800 dark:border-slate-700 outline-none text-blue-600 font-bold" />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-xs font-black uppercase text-slate-400 block">Rodapé Principal</label>
+                    <input type="text" value={config.footerTextPrimary} onChange={(e) => updateConfig("footerTextPrimary", e.target.value)} className="w-full px-4 py-3 rounded-xl border dark:bg-slate-800" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-black uppercase text-slate-400 block">Instituição</label>
+                    <input type="text" value={config.footerTextSecondary} onChange={(e) => updateConfig("footerTextSecondary", e.target.value)} className="w-full px-4 py-3 rounded-xl border dark:bg-slate-800" />
                   </div>
                 </div>
               </div>
 
-              <div className="p-8 bg-slate-50 dark:bg-slate-800/50">
-                <button onClick={() => setShowSettings(false)} className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest shadow-lg hover:bg-blue-700 transition-colors">Salvar e Fechar</button>
+              <div className="p-8 bg-slate-50 dark:bg-slate-800/50 flex justify-between items-center">
+                <button onClick={resetConfig} className="flex items-center gap-2 text-red-500 font-black text-[10px] uppercase hover:underline"><RefreshCw size={14}/> Limpar Tudo</button>
+                <button onClick={() => setShowSettings(false)} className="px-10 bg-blue-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest shadow-xl hover:bg-blue-700 active:scale-95 transition-all">Aplicar e Salvar</button>
               </div>
             </div>
           </div>
         )}
 
-        {/* CABEÇALHO */}
+        {/* CABEÇALHO PRINCIPAL */}
         <header className={`mb-16 border-b-4 pb-12 flex flex-col items-center transition-colors ${config.isDarkMode ? 'border-slate-800' : 'border-slate-100'}`}>
-          <div className="mb-10 w-full min-h-[160px] flex items-center justify-center">
-            <img src={config.headerImg} alt="Logotipo" className="w-auto max-w-full max-h-[220px] object-contain filter drop-shadow-xl" onError={(e) => (e.currentTarget.src = DEFAULT_CONFIG.headerImg)} />
+          <div className="mb-12 w-full min-h-[180px] flex items-center justify-center overflow-hidden">
+            <img 
+              src={config.headerImg} 
+              alt="Logotipo" 
+              className="w-auto max-w-[400px] max-h-[220px] object-contain filter drop-shadow-2xl transition-all duration-500 hover:scale-105" 
+              onError={(e) => (e.currentTarget.src = DEFAULT_CONFIG.headerImg)} 
+            />
           </div>
-          <div className={`w-full py-8 px-12 text-center rounded-[2.5rem] shadow-2xl ${config.isDarkMode ? 'bg-slate-900 text-blue-100' : 'bg-slate-900 text-white'}`}>
-             <h2 className="text-2xl md:text-3xl font-black uppercase tracking-[0.35em] leading-tight">{config.headerText}</h2>
+          <div className={`w-full py-10 px-12 text-center rounded-[3rem] shadow-2xl relative overflow-hidden ${config.isDarkMode ? 'bg-slate-900 text-blue-100 border border-slate-800' : 'bg-slate-900 text-white'}`}>
+             <div className="absolute top-0 left-0 w-full h-full opacity-5 pointer-events-none bg-[radial-gradient(circle,white_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+             <h2 className="text-2xl md:text-3xl font-black uppercase tracking-[0.4em] leading-tight relative z-10">{config.headerText}</h2>
           </div>
         </header>
 
-        {/* SUMARIO */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-24">
+        {/* RESUMO EXECUTIVO */}
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-32">
           {[
-            { label: 'Financeiro', title: 'Investimento Global', value: formatCurrency(totalInvestimento), icon: <DollarSign size={24} />, grad: 'from-blue-600 to-indigo-600' },
-            { label: 'Discentes', title: 'Alunos Atendidos', value: totalAlunos.toLocaleString(), suffix: 'Estudantes', icon: <Users size={24} />, grad: 'from-emerald-500 to-teal-600' },
-            { label: 'Execução', title: 'Unidades de Ensino', value: sortedSchools.length.toString(), suffix: 'Escolas', icon: <School size={24} />, grad: 'from-amber-400 to-orange-500' }
+            { label: 'Total em Obras', value: formatCurrency(totalInvestimento), icon: <DollarSign size={28} />, grad: 'from-blue-600 to-indigo-700' },
+            { label: 'Alunos Impactados', value: totalAlunos.toLocaleString(), icon: <Users size={28} />, grad: 'from-emerald-500 to-teal-600' },
+            { label: 'Unidades Atendidas', value: sortedSchools.length.toString(), icon: <School size={28} />, grad: 'from-amber-400 to-orange-500' }
           ].map((kpi, idx) => (
-            <div key={idx} className={`p-10 rounded-[3rem] border flex flex-col items-center text-center shadow-xl ${config.isDarkMode ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-100'}`}>
-              <div className={`p-5 rounded-3xl shadow-lg bg-gradient-to-br ${kpi.grad} text-white mb-6`}>{kpi.icon}</div>
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{kpi.label}</span>
-              <h3 className="text-3xl font-black">{kpi.value}</h3>
-              <p className="text-[11px] font-bold text-slate-500 uppercase mt-2">{kpi.suffix || kpi.title}</p>
+            <div key={idx} className={`p-10 rounded-[3.5rem] border flex flex-col items-center text-center shadow-xl transition-all hover:-translate-y-2 ${config.isDarkMode ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-100'}`}>
+              <div className={`p-6 rounded-[2.5rem] shadow-lg bg-gradient-to-br ${kpi.grad} text-white mb-8`}>{kpi.icon}</div>
+              <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2">{kpi.label}</span>
+              <h3 className="text-3xl font-black tracking-tighter">{kpi.value}</h3>
             </div>
           ))}
         </section>
 
-        {/* TABELA */}
-        <section id="tabela" className="mb-32">
+        {/* LISTAGEM TÉCNICA */}
+        <section className="mb-32">
           <div className="flex items-center gap-6 mb-12">
-            <div className="p-6 bg-slate-900 text-white rounded-[2rem] shadow-xl"><TrendingUp size={36}/></div>
-            <h2 className="text-4xl font-black uppercase">Detalhamento</h2>
+            <div className="p-6 bg-slate-900 text-white rounded-[2rem] shadow-2xl"><TrendingUp size={36}/></div>
+            <h2 className="text-4xl font-black uppercase tracking-tighter">Quadro Detalhado de Investimentos</h2>
           </div>
           <div className={`rounded-[3.5rem] shadow-2xl border overflow-hidden ${config.isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead className="bg-slate-900 text-white">
                   <tr>
-                    <th className="px-8 py-7 text-[10px] font-black uppercase tracking-widest">Escola</th>
-                    <th className="px-8 py-7 text-[10px] font-black uppercase tracking-widest">Macroregião</th>
-                    <th className="px-8 py-7 text-[10px] font-black uppercase tracking-widest text-center">Alunos</th>
-                    <th className="px-8 py-7 text-[10px] font-black uppercase tracking-widest">Valor</th>
+                    <th className="px-10 py-8 text-[11px] font-black uppercase tracking-widest">Unidade Escolar</th>
+                    <th className="px-10 py-8 text-[11px] font-black uppercase tracking-widest">Localização</th>
+                    <th className="px-10 py-8 text-[11px] font-black uppercase tracking-widest text-center">Alunos</th>
+                    <th className="px-10 py-8 text-[11px] font-black uppercase tracking-widest">Investimento</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {sortedSchools.map(s => (
-                    <tr key={s.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                      <td className="px-8 py-7">
-                        <div className="font-black text-slate-800 dark:text-blue-400">{s.nome}</div>
-                        <div className="text-[9px] text-slate-400 font-bold uppercase">{s.segmento}</div>
+                    <tr key={s.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
+                      <td className="px-10 py-8">
+                        <div className="font-black text-[16px] text-slate-800 dark:text-blue-400">{s.nome}</div>
+                        <div className="text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-widest">{s.segmento}</div>
                       </td>
-                      <td className="px-8 py-7">
+                      <td className="px-10 py-8">
                         <div className="text-xs font-black uppercase text-slate-600 dark:text-slate-300">{s.bairro}</div>
-                        <div className="text-[10px] text-blue-600 font-bold uppercase">{s.macroregiao}</div>
+                        <div className="text-[11px] text-blue-600 font-bold uppercase">{s.macroregiao}</div>
                       </td>
-                      <td className="px-8 py-7 text-center">
-                        <span className="px-3 py-1 rounded-lg border text-xs font-black">{s.alunos}</span>
+                      <td className="px-10 py-8 text-center">
+                        <span className="px-4 py-2 rounded-xl border-2 font-black text-xs">{s.alunos}</span>
                       </td>
-                      <td className="px-8 py-7">
-                        <div className="font-black text-emerald-600">{formatCurrency(s.valorInvestimento)}</div>
+                      <td className="px-10 py-8">
+                        <div className="font-black text-[18px] text-emerald-600 tracking-tighter">{formatCurrency(s.valorInvestimento)}</div>
                       </td>
                     </tr>
                   ))}
                   <tr className="bg-slate-900 text-white">
-                    <td colSpan={3} className="px-8 py-8 text-right font-black uppercase tracking-widest text-slate-400">Total Geral</td>
-                    <td className="px-8 py-8 text-2xl font-black text-emerald-400">{formatCurrency(totalInvestimento)}</td>
+                    <td colSpan={3} className="px-10 py-10 text-right font-black uppercase tracking-widest text-slate-400">Investimento Total Estimado</td>
+                    <td className="px-10 py-10 text-3xl font-black text-emerald-400 tracking-tighter">{formatCurrency(totalInvestimento)}</td>
                   </tr>
                 </tbody>
               </table>
@@ -282,36 +264,38 @@ const App = () => {
           </div>
         </section>
 
-        {/* MAPA */}
+        {/* GEOLOCALIZAÇÃO */}
         <section className="mb-32">
           <div className="flex items-center gap-6 mb-12">
-            <div className="p-6 bg-red-600 text-white rounded-[2rem] shadow-xl"><Navigation size={36}/></div>
-            <h2 className="text-4xl font-black uppercase">Mapa de Obras</h2>
+            <div className="p-6 bg-red-600 text-white rounded-[2rem] shadow-2xl"><Navigation size={36}/></div>
+            <h2 className="text-4xl font-black uppercase tracking-tighter">Mapeamento de Obras</h2>
           </div>
-          <div className="rounded-[4rem] overflow-hidden shadow-2xl border-[16px] h-[600px] border-white dark:border-slate-900">
-            <iframe src="https://www.google.com/maps/d/u/0/embed?mid=1cSOLT1IFTlPUrZYO_xxqzJV_EQF1S_I" width="100%" height="100%" className="border-0"></iframe>
+          <div className="rounded-[4rem] overflow-hidden shadow-2xl border-[20px] h-[650px] border-white dark:border-slate-900 transition-all hover:border-slate-100">
+            <iframe src="https://www.google.com/maps/d/u/0/embed?mid=1cSOLT1IFTlPUrZYO_xxqzJV_EQF1S_I" width="100%" height="100%" className="border-0 brightness-[1.05]"></iframe>
           </div>
         </section>
 
-        {/* CARDS SERVICOS */}
-        <section className="mb-32">
+        {/* CARDS DE SERVIÇOS */}
+        <section className="mb-40">
           <div className="flex items-center gap-6 mb-16">
-            <div className="p-6 bg-amber-500 text-white rounded-[2rem] shadow-xl"><HardHat size={36}/></div>
-            <h2 className="text-4xl font-black uppercase">Serviços por Unidade</h2>
+            <div className="p-6 bg-amber-500 text-white rounded-[2rem] shadow-2xl"><HardHat size={36}/></div>
+            <h2 className="text-4xl font-black uppercase tracking-tighter">Escopo Técnico dos Serviços</h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
             {sortedSchools.map(s => (
-              <div key={s.id} className={`p-10 rounded-[3.5rem] border-b-8 shadow-xl transition-transform hover:-translate-y-2 hover:border-blue-600 ${config.isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-                <h5 className="font-black text-lg uppercase mb-6 leading-tight h-14 overflow-hidden">{s.nome}</h5>
-                <div className={`p-6 rounded-[2rem] italic text-sm mb-6 ${config.isDarkMode ? 'bg-slate-800' : 'bg-slate-50'}`}>"{s.servicos}"</div>
-                <div className="flex justify-between items-end pt-6 border-t dark:border-slate-800">
+              <div key={s.id} className={`p-12 rounded-[4rem] border-b-[12px] shadow-2xl transition-all hover:-translate-y-3 hover:border-blue-600 group ${config.isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+                <h5 className="font-black text-xl uppercase mb-8 leading-tight min-h-[3.5rem] group-hover:text-blue-600 transition-colors">{s.nome}</h5>
+                <div className={`p-8 rounded-[2.5rem] italic text-sm leading-relaxed mb-8 border transition-all ${config.isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-[#f9fafc] border-slate-50'} group-hover:bg-white dark:group-hover:bg-slate-800`}>
+                  "{s.servicos}"
+                </div>
+                <div className="flex justify-between items-end pt-8 border-t dark:border-slate-800">
                   <div>
-                    <span className="text-[9px] font-black text-slate-400 uppercase flex items-center gap-1"><MapPin size={10}/> {s.bairro}</span>
-                    <div className="text-xs font-black uppercase">{s.macroregiao}</div>
+                    <span className="text-[10px] font-black text-slate-400 uppercase flex items-center gap-1.5 mb-2"><MapPin size={12}/> {s.bairro}</span>
+                    <div className="text-xs font-black uppercase tracking-tight">{s.macroregiao}</div>
                   </div>
                   <div className="text-right">
-                    <span className="text-[9px] font-black text-slate-400 uppercase">Investimento</span>
-                    <div className="text-blue-600 font-black text-lg">{formatCurrency(s.valorInvestimento)}</div>
+                    <span className="text-[10px] font-black text-slate-400 uppercase mb-1 block">Orçamento</span>
+                    <div className="text-blue-600 font-black text-2xl tracking-tighter">{formatCurrency(s.valorInvestimento)}</div>
                   </div>
                 </div>
               </div>
@@ -319,22 +303,27 @@ const App = () => {
           </div>
         </section>
 
-        {/* RODAPÉ */}
-        <footer className="mt-40 pb-20 text-center border-t dark:border-slate-800 pt-16">
-          <div className="max-w-2xl mx-auto space-y-4">
-            <p className="text-[10px] font-black uppercase tracking-[0.5em] text-slate-400">{config.footerTextPrimary}</p>
-            <h4 className="text-xl font-black uppercase tracking-widest">{config.footerTextSecondary}</h4>
-            <p className="text-slate-500 text-xs font-bold uppercase">{config.footerTextTertiary}</p>
+        {/* RODAPÉ E LINK OFICIAL */}
+        <footer className="mt-40 pb-32 text-center border-t dark:border-slate-800 pt-24">
+          <div className="max-w-3xl mx-auto space-y-8">
+            <div className="space-y-4">
+              <p className="text-[11px] font-black uppercase tracking-[0.8em] text-slate-400 mb-6">{config.footerTextPrimary}</p>
+              <h4 className="text-2xl font-black uppercase tracking-widest leading-tight">{config.footerTextSecondary}</h4>
+              <p className="text-slate-500 text-sm font-bold uppercase tracking-[0.2em]">{config.footerTextTertiary}</p>
+            </div>
             
-            <div className="pt-8 flex flex-col items-center gap-2">
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Link de Acesso Oficial:</span>
+            <div className="pt-16 flex flex-col items-center gap-4">
+              <div className="w-16 h-1.5 bg-blue-600 rounded-full mb-2"></div>
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.5em]">Plataforma de Consulta Online:</span>
               <a 
                 href={config.siteUrl} 
                 target="_blank" 
                 rel="noopener noreferrer" 
-                className="flex items-center gap-2 text-blue-500 font-black text-sm hover:underline transition-all"
+                className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black text-sm transition-all hover:scale-105 active:scale-95 shadow-xl ${
+                  config.isDarkMode ? 'bg-slate-800 text-blue-400 hover:bg-slate-700' : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+                }`}
               >
-                <Globe size={14}/> {config.siteUrl}
+                <Globe size={18}/> {config.siteUrl}
               </a>
             </div>
           </div>
