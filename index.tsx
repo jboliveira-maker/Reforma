@@ -37,7 +37,8 @@ import {
   Upload,
   Globe,
   LayoutDashboard,
-  FileText
+  FileText,
+  HardHat
 } from 'lucide-react';
 
 const INITIAL_SCHOOL_DATA = [
@@ -61,7 +62,7 @@ const INITIAL_SCHOOL_DATA = [
     macroregiao: "Pinheirinho",
     regiao: "Norte",
     valorInvestimento: 1794453.34,
-    servicos: "Troca de cobertura, adequação de fluxo de cozinha, instalação de condicionadores de ar, rampas de acessibilidade, adequação de secretaria"
+    servicos: "Troca de cobertura, adequação de fluxo de cozinha, adequação elétrica com instalação de condicionadores de ar, rampas de acessibilidade, adequação de secretaria."
   },
   {
     id: 3,
@@ -72,7 +73,7 @@ const INITIAL_SCHOOL_DATA = [
     macroregiao: "HB",
     regiao: "Sul",
     valorInvestimento: 2165990.80,
-    servicos: "Reforma geral"
+    servicos: "Adequação em cobertura, demolição de cozinha existente, construção de cozinha e toda área de serviços, reforma de sanitários, troca de piso, rampas de acessibilidade, pintura predial, preparação para instalação de condicionadores de ar."
   },
   {
     id: 4,
@@ -83,7 +84,7 @@ const INITIAL_SCHOOL_DATA = [
     macroregiao: "Cidade da Criança",
     regiao: "Norte",
     valorInvestimento: 2650209.43,
-    servicos: "Reforma geral"
+    servicos: "Adequação em cobertura, reforma de sanitárioas existentes, construção de novos sanitários, construção de banheiros PNEs, adequação fluxo de cozinha, construção de novo espaço de serviços, adequação de rampa de acessibilidade, pintural predial (prédio já climatizado)."
   },
   {
     id: 5,
@@ -94,7 +95,7 @@ const INITIAL_SCHOOL_DATA = [
     macroregiao: "Centro",
     regiao: "Central",
     valorInvestimento: 2991029.46,
-    servicos: "Reforma geral"
+    servicos: "Construção de quatro salas de aula (B1, B2, M1 e M2), construção de fraldário, construção de sanitários, PNEs, troca de toda cobertura, construção de cozinha e área de serviços, instalação de condicionadores de ar."
   },
   {
     id: 6,
@@ -105,7 +106,7 @@ const INITIAL_SCHOOL_DATA = [
     macroregiao: "Bosque",
     regiao: "Norte",
     valorInvestimento: 981742.05,
-    servicos: "Reforma geral"
+    servicos: "Adequação em trecho de cobertura, construção de muro, construção de banheiros PNEs, construção de sanitários, construção de sala de professores, adequação de fluxo de cozinha, troca de piso e pintura predial."
   },
   {
     id: 7,
@@ -116,18 +117,18 @@ const INITIAL_SCHOOL_DATA = [
     macroregiao: "HB",
     regiao: "Oeste",
     valorInvestimento: 5067448.08,
-    servicos: "Reforma geral"
+    servicos: "Reforma geral."
   },
   {
     id: 8,
-    nome: "Anázia José Bolçone",
-    segmento: "0 a 3 anos",
-    alunos: 145,
-    bairro: "Vila São Jorge",
-    macroregiao: "Cidade da Criança",
+    nome: "Clóvis Sanfelice",
+    segmento: "4 a 5 anos",
+    alunos: 233,
+    bairro: "Solo Sagrado",
+    macroregiao: "Pinheirinho",
     regiao: "Norte",
-    valorInvestimento: 2793728.63,
-    servicos: "Reforma geral"
+    valorInvestimento: 2673948.02,
+    servicos: "Troca de Cobertura, construção de estacionamento, consturção de rampas de acessibilidade, reforma de sanitários, adequação de fluxo de cozinha, construção de deposito, adequação de drenagem e trecho de muro, pintura predial, climatização."
   },
   {
     id: 9,
@@ -138,7 +139,7 @@ const INITIAL_SCHOOL_DATA = [
     macroregiao: "Vila Toninho",
     regiao: "Leste",
     valorInvestimento: 2867954.10,
-    servicos: "Reforma geral"
+    servicos: "Adequação em cobertura, revitalização das salas de aula, informática e biblicoteca, construção de novos sanitários, inclusive PNEs, construção de novo espaço de cozinha e serviços, construção de novo espaço administrativo (diretoria, coordenação, secretaria), adequação de rampa acessível, pintura predial, climatização de novos espaços."
   },
   {
     id: 10,
@@ -149,7 +150,7 @@ const INITIAL_SCHOOL_DATA = [
     macroregiao: "Cidade da Criança",
     regiao: "Norte",
     valorInvestimento: 3271119.54,
-    servicos: "Reforma geral"
+    servicos: "Adequação em cobertura, construção de banherios PNEs, reforma de sanitários existentes, adequação de todo trecho administrativo (recpeção, secretaria, diretoria, coordenação, sala de professores e sanitários), adequacação de fluxo de cozinha, construção de biblioteca, troca de piso, pintura predial, instalação de condicionadores de ar."
   },
   {
     id: 11,
@@ -160,7 +161,7 @@ const INITIAL_SCHOOL_DATA = [
     macroregiao: "Bosque",
     regiao: "Norte",
     valorInvestimento: 2027636.01,
-    servicos: "Reforma geral"
+    servicos: "Adequação de fluxo de cozinha, ampliação de sala dos professores com sanitário, construção de novo espaço para biblioteca, construção de depositos, costrução de rampa acessível, construção de refeitório para funcionários, construção de sanitários, construção de sanitários PNEs, instalação de condicionadores de ar, adequação de estacionamento, manutenção em piso granilite, pintura predial."
   }
 ];
 
@@ -190,11 +191,13 @@ const App = () => {
   useEffect(() => { localStorage.setItem("footerTextTertiary", footerTextTertiary); }, [footerTextTertiary]);
   useEffect(() => { localStorage.setItem("alignment", alignment); }, [alignment]);
 
-  const totalInvestimento = 34927190.25;
-
   const sortedSchools = useMemo(() => {
     return [...INITIAL_SCHOOL_DATA].sort((a, b) => a.nome.localeCompare(b.nome));
   }, []);
+
+  const totalInvestimento = useMemo(() => 
+    sortedSchools.reduce((acc, school) => acc + school.valorInvestimento, 0),
+  [sortedSchools]);
 
   const totalAlunos = useMemo(() => 
     sortedSchools.reduce((acc, school) => acc + school.alunos, 0), 
@@ -467,7 +470,7 @@ const App = () => {
 
               <div className="space-y-2">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-2 block">{kpi.label}</span>
-                <p className={`text-xs font-bold uppercase tracking-wider ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                <p className={`text-xs font-bold uppercase tracking-wider ${isDarkMode ? 'text-slate-400' : 'text-slate-50'}`}>
                   {kpi.title}
                 </p>
                 <h3 className={`text-3xl font-black leading-none tracking-tight transition-colors ${
@@ -667,15 +670,14 @@ const App = () => {
             </div>
           </section>
 
-          {/* 4. DETALHAMENTO TÉCNICO - ICONE NA FRENTE E TEXTO ATUALIZADO */}
+          {/* 4. DESCRIÇÃO DE SERVIÇOS - ICONE NA FRENTE E ALINHADO À ESQUERDA */}
           <div id="descricao-servicos" className="page-break pt-4">
-            <div className="flex flex-col items-center gap-6 mb-20 text-center">
-              <div className="bg-amber-500 text-white p-6 rounded-[2rem] shadow-2xl">
-                <Info size={40} />
+            <div className="flex items-center gap-8 mb-20 text-left">
+              <div className="bg-amber-500 text-white p-6 rounded-[2rem] shadow-2xl shrink-0">
+                <HardHat size={40} />
               </div>
               <div>
-                <h2 className={`text-5xl font-black uppercase tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Detalhamento Técnico</h2>
-                <p className="text-slate-400 text-base font-bold uppercase tracking-[0.4em] mt-2">Especificações de Engenharia e Manutenção</p>
+                <h2 className={`text-5xl font-black uppercase tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Descrição de Serviços</h2>
               </div>
             </div>
 
@@ -730,7 +732,7 @@ const App = () => {
                       <div className="flex flex-col items-start">
                          <div className="flex items-center gap-1.5 mb-1">
                             <MapPin size={12} className="text-red-500" />
-                            <span className="text-slate-400 uppercase tracking-widest text-[9px]">Região</span>
+                            <span className="text-slate-400 uppercase tracking-widest text-[9px]">Bairro</span>
                          </div>
                          <span className={`uppercase tracking-tight ${isDarkMode ? 'text-slate-200' : 'text-slate-900'}`}>{school.bairro}</span>
                       </div>
